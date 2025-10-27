@@ -6,8 +6,12 @@ const int totalReadings = 10;
 long smoothingArray[totalReadings];
 int readIndex = 0;
 unsigned long total = 0;
+
+int colorSensor = 11;
+
 void setup() {  // put your setup code here, to run once:
-  for (int i = 0; i < totalReadings; i++) { smoothingArray[i] = 18000; }
+  for (int i = 0; i < totalReadings; i++) { smoothingArray[i] = 0; }
+  pinMode(colorSensor, INPUT);
   pinMode(FG, INPUT_PULLUP);
   pinMode(powerPin, OUTPUT);
   pinMode(directionPin, OUTPUT);
@@ -21,6 +25,55 @@ int fastestPulse = 420;
 long slowestPulse = 18000;
 float floatMap(float x, float in_min, float in_max, float out_min, float out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+unsigned long lastDetection = 0;
+bool colorSensorState = false;
+float getRPM(){
+  float rpm = -1;
+  if(digitalRead(colorSensor)){
+    
+    if(lastDetection + 600 < millis()){
+      
+      unsigned long diff = millis() - lastDetection;
+      lastDetection = millis();
+      
+      rpm = 60.0 /(diff/1000.0);
+      
+
+
+    }else{
+      lastDetection = millis();
+    }
+  }
+  
+  return rpm;
+}
+float getMotorPulse(int FG){
+  total -= smoothingArray[readIndex];
+
+  unsigned long highPulse = pulseIn(FG, HIGH, slowestPulse);
+
+  if(highPulse < fastestPulse){
+    highPulse = slowestPulse;
+  }
+
+  smoothingArray[readIndex] = highPulse;
+
+  /*Serial.print(" AddingValue: " + String(smoothingArray[readIndex]));*/
+
+  total += smoothingArray[readIndex];
+  float average = total / totalReadings;
+
+ /* Serial.print("Average Sample: " + String(average) + " Current Index: " + String(readIndex) + " Total: " + String(total) + " ");
+  Serial.print(" [");
+  for (int i = 0; i < totalReadings; i++) { Serial.print(String(smoothingArray[i]) + ", "); }
+  Serial.print("]");
+  */
+  readIndex = (readIndex + 1) % totalReadings;
+
+  
+  return average;
 }
 float getMotorSpeed(int motorPin) {
   // Serial.print(" Removing Value: " + String(smoothingArray[readIndex]));
@@ -64,7 +117,7 @@ void loop() {
   Serial.println("High Input: " + String(highInput) + " Low Input: " + String(lowInput) + " Period" + String(period) + " MaxTimeout: " + String(maxTimeout));
   if (highInput < maxTimeout) { maxTimeout = highInput; }
   if (lowInput < maxTimeout) { maxTimeout = lowInput; }
-  */
+  
   
   if (lastUpdate + 100 < millis()) {
     power++;
@@ -75,6 +128,12 @@ void loop() {
   // max value 17700 min value 420 power = 100;
   if (power > 255) {
     power = 0;
+  }*/
+  analogWrite(powerPin, 255);  //getMotorSpeed(FG); Serial.println(getMotorSpeed(FG)); 
+  float rpm = getRPM();
+  if(rpm != -1){
+    Serial.println(String(rpm) + "," + String(getMotorPulse(FG)));
   }
-  analogWrite(powerPin, power);  //getMotorSpeed(FG); Serial.println(getMotorSpeed(FG));
+  //Serial.println(!digitalRead(colorSensor));
+  getMotorPulse(FG);
 }
