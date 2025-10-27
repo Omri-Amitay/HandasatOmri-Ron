@@ -1,0 +1,80 @@
+int FG = 12;
+int powerPin = 3;
+int directionPin = 7;
+int power = 100;
+const int totalReadings = 10;
+long smoothingArray[totalReadings];
+int readIndex = 0;
+unsigned long total = 0;
+void setup() {  // put your setup code here, to run once:
+  for (int i = 0; i < totalReadings; i++) { smoothingArray[i] = 18000; }
+  pinMode(FG, INPUT_PULLUP);
+  pinMode(powerPin, OUTPUT);
+  pinMode(directionPin, OUTPUT);
+  digitalWrite(directionPin, HIGH);
+  Serial.begin(115200);
+  power = 200;
+}
+long lastUpdate = 0;
+int largestNum = 0;
+int fastestPulse = 420;
+long slowestPulse = 18000;
+float floatMap(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+float getMotorSpeed(int motorPin) {
+  // Serial.print(" Removing Value: " + String(smoothingArray[readIndex]));
+  total -= smoothingArray[readIndex];
+
+  unsigned long highPulse = pulseIn(motorPin, HIGH, slowestPulse);
+  unsigned long lowPulse = pulseIn(motorPin, LOW, slowestPulse);
+
+  unsigned long period = highPulse + lowPulse;  // if true then motor is actually slow
+  if (fastestPulse > highPulse || fastestPulse > lowPulse || period < 0) {
+    period = slowestPulse * 2;
+  }
+
+  Serial.print("Period: " + String(period) + " ");
+
+  smoothingArray[readIndex] = period;
+
+  Serial.print(" AddingValue: " + String(smoothingArray[readIndex]));
+
+  total += smoothingArray[readIndex];
+  float average = total / totalReadings;
+
+  Serial.print("Average Sample: " + String(average) + " Current Index: " + String(readIndex) + " Total: " + String(total) + " ");
+  Serial.print(" [");
+  for (int i = 0; i < totalReadings; i++) { Serial.print(String(smoothingArray[i]) + ", "); }
+  Serial.print("]");
+  readIndex = (readIndex + 1) % totalReadings;
+
+  if (fastestPulse * 2 > average) {
+    while (true) { Serial.println("error " + String(average)); }
+  }
+
+  return floatMap(average, fastestPulse * 2, slowestPulse * 2, 53, 0);
+}
+
+void loop() {
+  /*  long highInput = pulseIn(FG, HIGH, 1000000);
+  long lowInput = pulseIn(FG, LOW, 1000000);
+  long period = highInput + lowInput;
+
+  Serial.println("High Input: " + String(highInput) + " Low Input: " + String(lowInput) + " Period" + String(period) + " MaxTimeout: " + String(maxTimeout));
+  if (highInput < maxTimeout) { maxTimeout = highInput; }
+  if (lowInput < maxTimeout) { maxTimeout = lowInput; }
+  */
+  
+  if (lastUpdate + 100 < millis()) {
+    power++;
+    lastUpdate = millis();
+  }
+  
+
+  // max value 17700 min value 420 power = 100;
+  if (power > 255) {
+    power = 0;
+  }
+  analogWrite(powerPin, power);  //getMotorSpeed(FG); Serial.println(getMotorSpeed(FG));
+}
