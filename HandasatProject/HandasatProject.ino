@@ -17,7 +17,7 @@ void setup() {  // put your setup code here, to run once:
   pinMode(directionPin, OUTPUT);
   digitalWrite(directionPin, HIGH);
   Serial.begin(115200);
-  power = 200;
+ 
 }
 long lastUpdate = 0;
 int largestNum = 0;
@@ -119,6 +119,7 @@ float getMotorSpeed(int motorPin) {
   return floatMap(average, fastestPulse * 2, slowestPulse * 2, 53, 0);
 }
 unsigned long passedSinceLastSignal = 0;
+int NumOfRotations = 0;
 void loop() {
   /*  long highInput = pulseIn(FG, HIGH, 1000000);
   long lowInput = pulseIn(FG, LOW, 1000000);
@@ -141,14 +142,16 @@ void loop() {
   }*/
   analogWrite(powerPin, power);  //getMotorSpeed(FG); Serial.println(getMotorSpeed(FG)); 
   float rpm = getRPM();
-  int NumOfRotations = 0;
+  
   if(rpm != -1){
     NumOfRotations++;
+    Serial.println(NumOfRotations);
   }
   if(rpm != -1 && valueSmoothed && passedSinceLastSignal + 1 < millis() && NumOfRotations >= 3){
     NumOfRotations = 0;
     passedSinceLastSignal = millis();
     valueSmoothed = false;
+    Serial.println(power);
     power -= 10;
    
     Serial.println(String(rpm) + "," + String(getMotorPulse(FG)) + " pwm: " + String(power));
@@ -156,6 +159,6 @@ void loop() {
   //Serial.println(!digitalRead(colorSensor));
   getMotorPulse(FG);
   if(power < 200){
-    Serial.println("done");
+    Serial.println("done" + String(power));
   }
 }
