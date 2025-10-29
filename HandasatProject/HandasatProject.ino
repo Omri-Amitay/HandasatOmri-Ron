@@ -2,11 +2,11 @@ int FG = 12;
 int powerPin = 3;
 int directionPin = 7;
 int power = 255;
-const int totalReadings = 10;
-long smoothingArray[totalReadings];
+
 int readIndex = 0;
 unsigned long total = 0;
-
+const int totalReadings = 30;
+long smoothingArray[totalReadings];
 int colorSensor = 11;
 bool valueSmoothed = false;
 void setup() {  // put your setup code here, to run once:
@@ -112,11 +112,14 @@ void loop() {
   }*/
   analogWrite(powerPin, power);  //getMotorSpeed(FG); Serial.println(getMotorSpeed(FG)); 
   float rpm = getRPM();
-  
+  unsigned long pulse = getMotorPulse(FG);
   if(rpm != -1){
     NumOfRotations++;
-    Serial.println(NumOfRotations);
+
+    float calculation = 26883 * pow(pulse, -1);
+    Serial.println("Signal Pulse: " + String(pulse) + " Actual RPM: " + String(rpm) + " Calculated RPM: " + String(calculation));
   }
+  /*
   if(rpm != -1 && valueSmoothed && passedSinceLastSignal + 1 < millis() && NumOfRotations >= 3){
     NumOfRotations = 0;
     passedSinceLastSignal = millis();
@@ -133,5 +136,5 @@ void loop() {
   getMotorPulse(FG);
   if(power < 16){
     Serial.println("done" + String(power));
-  }
+  }*/
 }
