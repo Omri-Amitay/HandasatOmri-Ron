@@ -3,7 +3,7 @@ import time
 import csv
 import sys
 
-PORT = "COM3"       # ← change to your Arduino port
+PORT = "COM4"       # ← change to your Arduino port
 BAUD = 115200       # ← match Serial.begin(...)
 OUTFILE = "data.csv"
 

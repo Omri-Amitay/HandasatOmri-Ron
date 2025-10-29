@@ -87,37 +87,7 @@ float getMotorPulse(int FG){
   
   return average;
 }
-float getMotorSpeed(int motorPin) {
-  // Serial.print(" Removing Value: " + String(smoothingArray[readIndex]));
-  total -= smoothingArray[readIndex];
 
-  unsigned long highPulse = pulseIn(motorPin, HIGH, slowestPulse);
-  unsigned long lowPulse = pulseIn(motorPin, LOW, slowestPulse);
-
-  unsigned long period = highPulse + lowPulse;  // if true then motor is actually slow
-  if (fastestPulse > highPulse || fastestPulse > lowPulse || period < 0) {
-    period = slowestPulse * 2;
-  }
-
-  //Serial.print("Period: " + String(period) + " ");
-
-  smoothingArray[readIndex] = period;
-
-  /*Serial.print(" AddingValue: " + String(smoothingArray[readIndex]));*/
-
-  total += smoothingArray[readIndex];
-  float average = total / totalReadings;
-
-  /*Serial.print("Average Sample: " + String(average) + " Current Index: " + String(readIndex) + " Total: " + String(total) + " ");
-  Serial.print(" [");
-  for (int i = 0; i < totalReadings; i++) { Serial.print(String(smoothingArray[i]) + ", "); }
-  Serial.print("]"); */
-  readIndex = (readIndex + 1) % totalReadings;
-
-
-
-  return floatMap(average, fastestPulse * 2, slowestPulse * 2, 53, 0);
-}
 unsigned long passedSinceLastSignal = 0;
 int NumOfRotations = 0;
 void loop() {
@@ -151,14 +121,17 @@ void loop() {
     NumOfRotations = 0;
     passedSinceLastSignal = millis();
     valueSmoothed = false;
+    
+    
+   
+    Serial.println(String(rpm) + "," + String(getMotorPulse(FG)));
     Serial.println(power);
     power -= 10;
-   
-    Serial.println(String(rpm) + "," + String(getMotorPulse(FG)) + " pwm: " + String(power));
+  
   }
   //Serial.println(!digitalRead(colorSensor));
   getMotorPulse(FG);
-  if(power < 200){
+  if(power < 16){
     Serial.println("done" + String(power));
   }
 }
