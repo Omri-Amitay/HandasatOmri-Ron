@@ -20,6 +20,7 @@ unsigned Motor::getFloatMap(float x, float in_min, float in_max, float out_min, 
 }
 
 void Motor::setPower(float power, int direction) {
+  direction
   analogWrite(_motorPin, power);
   digitalWrite(_directionPin, direction);
 }
