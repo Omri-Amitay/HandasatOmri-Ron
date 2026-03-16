@@ -11,6 +11,9 @@ class Robot{
     
   private:
   
+  // Motor leftMotor(" left motor ",18,12,25, true);
+  // Motor rightMotor(" right motor ",14,13,26, false);
+
   enum RobotStates = {
     NONE, 
     INIT,
@@ -29,3 +32,5 @@ class Robot{
   RobotStates currentState = RobotStates.INIT;
 
 }
+
+#endif

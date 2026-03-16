@@ -11,7 +11,7 @@
 class Gyro{
   public:
     Gyro();
-
+    void init();
     float getY();
     void update();
   private:

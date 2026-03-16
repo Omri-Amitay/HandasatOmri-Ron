@@ -9,6 +9,9 @@
 Adafruit_MPU6050 mpu;
 
 Gyro::Gyro(){
+
+}
+void Gyro::init(){
   if (!mpu.begin()) while (1);
 
 mpu.setAccelerometerRange(MPU6050_RANGE_2_G);
@@ -51,9 +54,13 @@ void Gyro::update(){
   // This is exactly how self-balancing bots stay upright
   angleY = ALPHA * (angleY + gyroRate * dt) + (1.0 - ALPHA) * accelAngle;
 
+  Serial.print(" Gyro Angle: ");
+  Serial.print(angleY);
 
 }
 
 float Gyro::getY(){
+  Serial.print(" , Gyro Angle: ");
+  Serial.print(angleY);
   return angleY;
 }
