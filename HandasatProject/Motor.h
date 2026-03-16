@@ -17,6 +17,8 @@ public:
   float getCalculatedRPM();
   void setVelocity(float vel);
   void setTunableNumber(double val, double val2);
+  double** getPIDValues();
+  void updatePID(double* newValues[6]);
   void update();
 
 private:
@@ -45,7 +47,7 @@ private:
   double Kp = 50, Ki = 6, Kd = 0;
   double Kv = 5.8, Ks = 3.9;
   PID velocityController;
-
+  double* pidValues[6] = {&Kp,&Ki,&Kd,&Ks,&Kv,&Setpoint};
 
   const int _totalReadings = 10;
   long _smoothingArray[10];

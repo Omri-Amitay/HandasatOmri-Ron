@@ -10,7 +10,9 @@ Motor::Motor(String motorName, int motorPin, int directionPin, int signalPin, bo
   _reversed(reversed),
   _motorName(motorName), 
   velocityController(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT)
-{}
+{
+  
+}
 
 void Motor::init() {
   for (int i = 0; i < _totalReadings; i++) { _smoothingArray[i] = 0; }
@@ -23,6 +25,10 @@ void Motor::init() {
   this->velocityController.SetMode(MANUAL);
   this->velocityController.SetMode(AUTOMATIC);
   
+}
+
+double** Motor::getPIDValues(){
+  return this->pidValues;
 }
 
 float Motor::getFloatMap(float x, float in_min, float in_max, float out_min, float out_max) {
@@ -106,6 +112,20 @@ void Motor::setTunableNumber(double val, double val2){
   // Kd = val2;
   this->velocityController.SetTunings(Kp,Ki,Kd);
 
+}
+void Motor::updatePID(double* newValues[6]){
+  for(int i = 0; i < 6; i++){
+    *(this->pidValues[i]) = *(newValues[i]);
+  }
+  this->velocityController.SetTunings(Kp,Ki,Kd);
+
+  Serial.print(_motorName);
+  Serial.print(" Kp: ");
+  Serial.print(Kp);
+  Serial.print(" Ki: ");
+  Serial.print(Ki);
+  Serial.print(" Kd: ");
+  Serial.print(Kd);
 }
 void Motor::update() {
   this->Input = this->getCalculatedRPM();
