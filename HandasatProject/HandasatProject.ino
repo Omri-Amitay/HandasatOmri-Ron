@@ -33,6 +33,7 @@ TunableGroup velocityTable("motorVelocity");
 
 
 double** motorPID;
+double motorPower;
 void setTunables(){
   positionTable.addField("Kp", &Kp);
   positionTable.addField("Ki", &Ki);
@@ -46,6 +47,7 @@ void setTunables(){
   velocityTable.addField("Ks", motorPID[3]);
   velocityTable.addField("Kv", motorPID[4]);
   velocityTable.addField("Setpoint", motorPID[5]);
+  velocityTable.addField("MotorPower", &motorPower);
 
   manager.addGroup(&positionTable);
   manager.addGroup(&velocityTable);
@@ -80,10 +82,20 @@ void loop(){
 
   if(positionTable.fieldChanged()){
     positionController.SetTunings(Kp,Ki,Kd);
+    
   }
   if(velocityTable.fieldChanged()){
+    if(motorPower != 0){
+      rightMotor.setVelControl(false);
+      leftMotor.setVelControl(false);
+    }else{
+      rightMotor.setVelControl(true);
+      leftMotor.setVelControl(true);
+    }
     rightMotor.updatePID(motorPID);
+    rightMotor.setPower(abs(motorPower), Utils::sign(motorPower));
     leftMotor.updatePID(motorPID);
+    leftMotor.setPower(abs(motorPower), Utils::sign(motorPower));
   }
   Serial.println();
  /*() double newKd = 0;
@@ -121,10 +133,10 @@ void loop(){
   // Serial.print(loopTime());
 
   Input = gyro.getY();
-  
+  */
   rightMotor.update();
   leftMotor.update();
-  gyro.update();*/
+  gyro.update();
 
 }
 

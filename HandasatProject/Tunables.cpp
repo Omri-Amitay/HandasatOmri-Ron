@@ -31,7 +31,7 @@ bool TunableField::isValid() const {
 }
 
 bool TunableField::changed(){
-  hasChanged = lastValue == *_valuePtr;
+  hasChanged = lastValue != *_valuePtr;
   lastValue = *_valuePtr;
   return hasChanged;
 }

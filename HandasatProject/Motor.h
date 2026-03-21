@@ -18,6 +18,7 @@ public:
   void setVelocity(float vel);
   void setTunableNumber(double val, double val2);
   double** getPIDValues();
+  void setVelControl(bool enabled);
   void updatePID(double* newValues[6]);
   void update();
 
@@ -32,6 +33,8 @@ private:
   int _signalPin;
   bool _reversed;
 
+  bool velocityControlled = false;
+
   int currentDirection = 0;
 
   bool _motorCalibrationState;
@@ -41,7 +44,7 @@ private:
   unsigned long _total = 0;
   bool _valueSmoothed = false;
 
-
+  float motorPower = 0;
 
   double Setpoint, Input, Output;
   double Kp = 50, Ki = 6, Kd = 0;
