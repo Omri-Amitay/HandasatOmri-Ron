@@ -1,8 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define WiFiName ""
-#define WiFiPassword ""
+#define WiFiName "sarico"
+#define WiFiPassword "liori123"
 
 const char HTML_MAIN[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>

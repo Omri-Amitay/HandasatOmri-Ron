@@ -54,13 +54,13 @@ void Gyro::update(){
   // This is exactly how self-balancing bots stay upright
   angleY = ALPHA * (angleY + gyroRate * dt) + (1.0 - ALPHA) * accelAngle;
 
-  Serial.print(" Gyro Angle: ");
-  Serial.print(angleY);
+  // Serial.print(" Gyro Angle: ");
+  // Serial.print(angleY);
 
 }
 
 float Gyro::getY(){
-  Serial.print(" , Gyro Angle: ");
-  Serial.print(angleY);
+  // Serial.print(" , Gyro Angle: ");
+  // Serial.print(angleY);
   return angleY;
 }

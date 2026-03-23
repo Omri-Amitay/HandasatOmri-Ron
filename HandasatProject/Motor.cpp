@@ -130,7 +130,9 @@ void Motor::updatePID(double* newValues[6]) {
 void Motor::update() {
   this->Input = this->getCalculatedRPM();
   float power = this->calculateOutput();
-
+  if(power < 0 ){
+    Serial.println("Potential bug!!!!!");
+  }
   if (this->velocityControlled) {
     if (Utils::inRange(this->Input, 0, 0.5)) {
       power = 0;
@@ -146,16 +148,16 @@ void Motor::update() {
 
 
   // float rpm = this->getCalculatedRPM();  //this causes the signal list to keep updating resulting in new RPM values.
-  Serial.print(_motorName + "Setpoint: ");
-  Serial.print(this->Setpoint);
+  // Serial.print(_motorName + "Setpoint: ");
+  // Serial.print(this->Setpoint);
   // Serial.print(", Power: ");
   // Serial.print(",");
   // Serial.print(power);
-  Serial.print(", ActualVel: ");
-  Serial.print(",");
-  Serial.print(this->Input);
-  Serial.print(" , VelocityEnabled: ");
-  Serial.print(this->velocityControlled);
+  // Serial.print(", ActualVel: ");
+  // Serial.print(",");
+  // Serial.print(this->Input);
+  // Serial.print(" , VelocityEnabled: ");
+  // Serial.print(this->velocityControlled);
   /*Serial.print(", Signal: ");
   Serial.print(",");
   // Serial.print(this->Kp);

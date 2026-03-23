@@ -36,7 +36,7 @@ public:
 
   bool setFieldValue(const String& fieldName, double newValue);
 
-  bool fieldChanged();
+  int fieldChanged();
 
 private:
   static const int MAX_FIELDS = 12;

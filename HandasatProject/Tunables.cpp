@@ -86,14 +86,14 @@ bool TunableGroup::setFieldValue(const String& fieldName, double newValue) {
   return true;
 }
 
-bool TunableGroup::fieldChanged(){
-  bool fieldChanged = false;
+int TunableGroup::fieldChanged(){
+  
   for(int i = 0; i < _fieldCount; i++){
     if(_fields[i].changed()){
-      fieldChanged = true;
+      return i;
     }
   }
-  return fieldChanged;
+  return -1;
 }
 
 // ----------------------------

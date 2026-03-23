@@ -46,7 +46,7 @@ void setTunables(){
   velocityTable.addField("Kd",motorPID[2]);
   velocityTable.addField("Ks", motorPID[3]);
   velocityTable.addField("Kv", motorPID[4]);
-  velocityTable.addField("Setpoint", motorPID[5]);
+  //velocityTable.addField("Setpoint", motorPID[5]);
   velocityTable.addField("MotorPower", &motorPower);
 
   manager.addGroup(&positionTable);
@@ -72,7 +72,7 @@ void setup(){
 
   positionController.SetOutputLimits(-40, 40);
   positionController.SetSampleTime(60);
-  positionController.SetMode(MANUAL);
+  positionController.SetMode(AUTOMATIC);
   
   Serial.println("Robot Initialized!");
   
@@ -84,7 +84,10 @@ void loop(){
     positionController.SetTunings(Kp,Ki,Kd);
     
   }
-  if(velocityTable.fieldChanged()){
+  int velFieldChange = velocityTable.fieldChanged();
+  if(velFieldChange != -1){
+    Serial.print("Vel FieldChange: ");
+    Serial.print(velocityTable.getFieldByIndex(velFieldChange)->getValue());
     if(motorPower != 0){
       rightMotor.setVelControl(false);
       leftMotor.setVelControl(false);
@@ -98,12 +101,8 @@ void loop(){
     leftMotor.setPower(abs(motorPower), Utils::sign(motorPower));
   }
   Serial.println();
- /*() double newKd = 0;
-  if(Utils::recievedNumber(newKd)){
-    Kd = newKd;
-    rightMotor.setTunableNumber(Kd, 0);
-    leftMotor.setTunableNumber(Kd, 0);
-  }
+  double newKd = 0;
+  
   if(hasStarted){
     digitalWrite(statusLed, HIGH);
     positionController.Compute();
@@ -121,19 +120,21 @@ void loop(){
   if( inRange){
     if(!hasStarted && lastInRange != 0){
       positionController.SetMode(AUTOMATIC);
+      rightMotor.setVelControl(true);
+      leftMotor.setVelControl(true);
       hasStarted = true;
     }else{
       lastInRange = millis();
     }
   }
 
-  // Serial.print(" inRnage: ");
-  // Serial.print( inRange );
+  Serial.print(" inRnage: ");
+  Serial.print( inRange );
   // Serial.print(" Loop Frequency: ");
   // Serial.print(loopTime());
 
   Input = gyro.getY();
-  */
+  
   rightMotor.update();
   leftMotor.update();
   gyro.update();
