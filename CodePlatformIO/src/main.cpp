@@ -86,6 +86,7 @@ void loop(){
     positionController.SetTunings(Kp,Ki,Kd);
     
   }
+
   int velFieldChange = velocityTable.fieldChanged();
   if(velFieldChange != -1){
     Serial.print("Vel FieldChange: ");
@@ -93,16 +94,19 @@ void loop(){
     if(motorPower != 0){
       rightMotor.setVelControl(false);
       leftMotor.setVelControl(false);
+      leftMotor.setPower(abs(motorPower), Utils::sign(motorPower));
+      rightMotor.setPower(abs(motorPower), Utils::sign(motorPower));
     }else{
       rightMotor.setVelControl(true);
       leftMotor.setVelControl(true);
     }
+
     rightMotor.updatePID(motorPID);
-    rightMotor.setPower(abs(motorPower), Utils::sign(motorPower));
     leftMotor.updatePID(motorPID);
-    leftMotor.setPower(abs(motorPower), Utils::sign(motorPower));
+    
   }
-  Serial.println();
+
+
   double newKd = 0;
   
   if(hasStarted){
@@ -122,16 +126,16 @@ void loop(){
   if( inRange){
     if(!hasStarted && lastInRange != 0){
       positionController.SetMode(AUTOMATIC);
-      rightMotor.setVelControl(true);
-      leftMotor.setVelControl(true);
+      // rightMotor.setVelControl(true);
+      // leftMotor.setVelControl(true);
       hasStarted = true;
     }else{
       lastInRange = millis();
     }
   }
 
-  Serial.print(" inRnage: ");
-  Serial.print( inRange );
+  // Serial.print(" inRnage: ");
+  // Serial.print( inRange );
   // Serial.print(" Loop Frequency: ");
   // Serial.print(loopTime());
 
@@ -140,6 +144,9 @@ void loop(){
   rightMotor.update();
   leftMotor.update();
   gyro.update();
+  Serial.print(" Millis: ");
+  Serial.print(millis());
+  Serial.println();
 
 }
 

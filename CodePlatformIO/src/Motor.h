@@ -24,7 +24,7 @@ public:
 
 private:
 
-
+  bool checkDirection(float power);
   float getFloatMap(float x, float in_min, float in_max, float out_min, float out_max);
   float calculateOutput();
   String _motorName;
@@ -36,6 +36,11 @@ private:
   bool velocityControlled = false;
 
   int currentDirection = 0;
+
+  unsigned long lastSwitchTime = 0;
+  long switchTimeMax = 628;
+  long lastRPM = 0;
+
 
   bool _motorCalibrationState;
   int readIndex = 0;
@@ -51,6 +56,8 @@ private:
   double Kv = 5.8, Ks = 3.9;
   PID velocityController;
   double* pidValues[6] = {&Kp,&Ki,&Kd,&Ks,&Kv,&Setpoint};
+
+
 
   const int _totalReadings = 10;
   long _smoothingArray[10];
