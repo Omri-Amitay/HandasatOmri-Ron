@@ -2,14 +2,15 @@
 #include <PID_v1.h>
 #include "Motor.h"
 #include "Utils.h"
-
+Motor* Motor::instances[2] = {nullptr, nullptr};
 Motor::Motor(String motorName, int motorPin, int directionPin, int signalPin, bool reversed)
   : _motorPin(motorPin),
     _directionPin(directionPin),
     _signalPin(signalPin),
     _reversed(reversed),
     _motorName(motorName),
-    velocityController(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT) {
+    velocityController(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT){
+    
 }
 
 void Motor::init() {
@@ -17,11 +18,44 @@ void Motor::init() {
   pinMode(_motorPin, OUTPUT);
   pinMode(_directionPin, OUTPUT);
   pinMode(_signalPin, INPUT_PULLUP);
+
+  if(instances[0] == nullptr){
+    instances[0] = this;
+    attachInterrupt(digitalPinToInterrupt(_signalPin), handleInterrupt0, CHANGE);
+  }else{
+    instances[1] = this;
+    attachInterrupt(digitalPinToInterrupt(_signalPin), handleInterrupt1, CHANGE);
+  }
+
   this->setPower(0, 1);
   velocityController.SetOutputLimits(-255, 255);
   velocityController.SetSampleTime(60);  //default is 200ms
   this->velocityController.SetMode(MANUAL);
   this->velocityController.SetMode(AUTOMATIC);
+}
+
+void IRAM_ATTR Motor::handleInterrupt0() {
+  if (instances[0] != nullptr) {
+    instances[0]->handleSignal();
+  }
+}
+
+void IRAM_ATTR Motor::handleInterrupt1() {
+  if (instances[1] != nullptr) {
+    instances[1]->handleSignal();
+  }
+}
+
+void IRAM_ATTR Motor::handleSignal() {
+  if (digitalRead(_signalPin)) {
+    // Rising edge
+    riseTime = micros();
+  } else {
+    // Falling edge
+    pulseWidth = micros() - riseTime;
+    lastPulseTime = micros();
+    newPulse = true;
+  }
 }
 
 double** Motor::getPIDValues() {
@@ -34,7 +68,6 @@ float Motor::getFloatMap(float x, float in_min, float in_max, float out_min, flo
 
 void Motor::setPower(float power, int wantedDirection) {  // true is forward false is backwards
   wantedDirection = wantedDirection <= 0 ? -1 : 1;               //allows -1 to act as negative direction
-  this->motorPower;
 
   currentDirection = wantedDirection;
   // direction = _reversed ? direction * -1 : direction; //flips direction
@@ -46,39 +79,59 @@ void Motor::setPower(float power, int wantedDirection) {  // true is forward fal
   digitalWrite(_directionPin, ActualDirection);
 }
 
-unsigned long Motor::getRawSignal() {
-  unsigned long highPulse = pulseIn(_signalPin, HIGH, _slowestPulse);
+long Motor::getRawSignal() {
 
-  if (highPulse < _fastestPulse) {
-    highPulse = _slowestPulse;
+  // unsigned long highPulse = pulseIn(_signalPin, HIGH, _slowestPulse);
+
+  // if (highPulse < _fastestPulse) {
+  //   highPulse = _slowestPulse;
+  // }
+  long pulse = -1;
+  unsigned long now = micros();
+  unsigned lastSignalTime;
+  noInterrupts();
+  if(this->newPulse){
+    this->newPulse = false;
+    pulse = pulseWidth;
   }
-  return highPulse;
+  lastSignalTime = this->lastPulseTime;
+  interrupts();
+  if(now - lastSignalTime > _slowestPulse){
+    return _slowestPulse;
+  }
+  
+  return pulse;
 }
 
 unsigned long Motor::getFilteredSignal() {
 
-  _total -= _smoothingArray[readIndex];
+  
 
   unsigned long highPulse = Motor::getRawSignal();
 
-  _smoothingArray[readIndex] = highPulse;
+  if(highPulse != -1){
+    _total -= _smoothingArray[readIndex];
+    _smoothingArray[readIndex] = highPulse;
 
-  /*Serial.print(" AddingValue: " + String(smoothingArray[readIndex]));*/
+    /*Serial.print(" AddingValue: " + String(smoothingArray[readIndex]));*/
 
-  _total += _smoothingArray[readIndex];
-  float average = _total / _totalReadings;
+    _total += _smoothingArray[readIndex];
+    
 
-  /* Serial.print("Average Sample: " + String(average) + " Current Index: " + String(readIndex) + " Total: " + String(total) + " ");
-  Serial.print(" [");
-  for (int i = 0; i < totalReadings; i++) { Serial.print(String(smoothingArray[i]) + ", "); }
-  Serial.print("]");
-  */
-  readIndex = (readIndex + 1) % _totalReadings;
+    /* Serial.print("Average Sample: " + String(average) + " Current Index: " + String(readIndex) + " Total: " + String(total) + " ");
+    Serial.print(" [");
+    for (int i = 0; i < totalReadings; i++) { Serial.print(String(smoothingArray[i]) + ", "); }
+    Serial.print("]");
+    */
+    readIndex = (readIndex + 1) % _totalReadings;
 
-  if (readIndex == 9) {
-    _valueSmoothed = true;
+    if (readIndex == 9) {
+      _valueSmoothed = true;
+    }
+
+    
   }
-
+  float average = _total / _totalReadings;
   return average;
 }
 
@@ -87,7 +140,7 @@ float Motor::getCalculatedRPM() {
   // Serial.print(" Sig:");
   // Serial.print(filteredSignal);
 
-  return filteredSignal == this->_slowestPulse ? 0 : 26883 * pow(filteredSignal, -1) * this->currentDirection;
+  return filteredSignal == this->_slowestPulse ? 0 : 26883/filteredSignal * this->currentDirection;
 }
 
 float Motor::calculateOutput() {
@@ -151,9 +204,6 @@ void Motor::update() {
   float power = this->calculateOutput();
   
   this->checkDirection(power);
-  if(power < 0 ){
-    Serial.println("Potential bug!!!!!");
-  }
   if (this->velocityControlled) {
     if (Utils::inRange(this->Input, 0, 0.5)) {
       power = 0;
@@ -169,14 +219,14 @@ void Motor::update() {
 
 
   //float rpm = this->getCalculatedRPM();  //this causes the signal list to keep updating resulting in new RPM values.
-  Serial.print(_motorName + "Setpoint: ");
+  // Serial.print(_motorName + "Setpoint: ");
   // Serial.print(this->Setpoint);
   // Serial.print(", Power: ");
   // Serial.print(",");
   // Serial.print(power);
-  Serial.print(", ActualVel: ");
-  Serial.print(",");
-  Serial.print(this->Input);
+  // Serial.print(", ActualVel: ");
+  // Serial.print(",");
+  // Serial.print(this->Input);
   // float rpm = this->getCalculatedRPM();
   // Serial.print(" R:");
   // Serial.print(rpm);
@@ -193,4 +243,8 @@ void Motor::update() {
 
   // Serial.print(_motorName + "RPM: ");
   // Serial.print(rpm); */
+}
+
+void Motor::print(){
+  Serial.print(_motorName + " R: " + String(Input));
 }

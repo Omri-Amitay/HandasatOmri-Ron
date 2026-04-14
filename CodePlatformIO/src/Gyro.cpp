@@ -14,7 +14,7 @@ Gyro::Gyro(){
 void Gyro::init(){
   if (!mpu.begin()) while (1);
 
-mpu.setAccelerometerRange(MPU6050_RANGE_2_G);
+mpu.setAccelerometerRange(MPU6050_ACCEL_);
   mpu.setGyroRange(MPU6050_RANGE_250_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 
