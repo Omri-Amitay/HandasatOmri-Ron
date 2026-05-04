@@ -4,16 +4,17 @@
 
 #include <Arduino.h>
 
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
+#include <MPU6050_light.h>
 #include <Wire.h>
 
 class Gyro{
   public:
     Gyro();
     void init();
-    float getY();
+    float getPitch();
     void update();
+
+    void CalibrateGyro();
   private:
    
     float ALPHA = 0.75;

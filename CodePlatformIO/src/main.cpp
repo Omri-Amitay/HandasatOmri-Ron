@@ -7,14 +7,15 @@
 #include "config.h"
 #include <PID_v1.h>
 
-Motor leftMotor(" left motor ", 18, 12, 25, true);
-Motor rightMotor(" right motor ", 14, 13, 26, false);
+Motor leftMotor(" left motor ", 18, 12, 25, false);
+Motor rightMotor(" right motor ", 14, 13, 26, true);
 
 Gyro gyro;
 int statusLed = 4;
 
 double Setpoint = 0, Output = 0, Input = 0;
-double Kp = 10, Ki = 0, Kd = 0;
+double Kp = 7.5, Ki = 5, Kd = 0.1;
+
 PID positionController(&Input, &Output, &Setpoint, Kp, Ki, Kd, REVERSE);
 
 TunablesManager manager;
@@ -31,14 +32,18 @@ TunableGroup velocityTable("motorVelocity");
 
 double **motorPID;
 double motorPower;
+double sampleTime = 40;
 
+double resetGyro = 0;
 void setTunables()
 {
   positionTable.addField("Kp", &Kp);
   positionTable.addField("Ki", &Ki);
   positionTable.addField("Kd", &Kd);
-
+  
   positionTable.addField("Setpoint", &Setpoint);
+  positionTable.addField("SampleTime", &sampleTime);
+  positionTable.addField("ResetGryo", &resetGyro);
 
   motorPID = rightMotor.getPIDValues();
   velocityTable.addField("Kp", motorPID[0]);
@@ -58,8 +63,11 @@ void setup()
   Serial.begin(115200);
   leftMotor.init();
   rightMotor.init();
-  rightMotor.setVelocity(0);
-  leftMotor.setVelocity(0);
+  delay(2000);
+  // rightMotor.setVelocity(0);
+  // leftMotor.setVelocity(0);
+  rightMotor.setPower(0,1);
+  leftMotor.setPower(0,1);
   setTunables();
   website.init();
 
@@ -68,9 +76,8 @@ void setup()
   gyro.init();
 
   positionController.SetOutputLimits(-255, 255);
-  positionController.SetSampleTime(40);
   positionController.SetMode(AUTOMATIC);
-
+  positionController.SetSampleTime(sampleTime);
   Serial.println("Robot Initialized!");
 }
 
@@ -101,6 +108,8 @@ void slowUpdates()
   Serial.print(Input);
   Serial.print(" MO: ");
   Serial.print(Output);
+  Serial.print(" MotorWantedPower: ");
+  Serial.print(motorPower);
   
   rightMotor.print();
   leftMotor.print();
@@ -109,6 +118,10 @@ void slowUpdates()
   if (positionTable.fieldChanged())
   {
     positionController.SetTunings(Kp, Ki, Kd);
+    positionController.SetSampleTime(sampleTime);
+    if(positionTable.getFieldByName("CalibrateGryo")->getValue() == 1){
+      gyro.CalibrateGyro();
+    }
   }
 
   int velFieldChange = velocityTable.fieldChanged();
@@ -116,6 +129,8 @@ void slowUpdates()
   {
     Serial.print("Vel FieldChange: ");
     Serial.print(velocityTable.getFieldByIndex(velFieldChange)->getValue());
+    
+    
     if (motorPower != 0)
     {
       rightMotor.setVelControl(false);
@@ -160,7 +175,7 @@ void fastUpdates(){
     hasStarted = false;
   }
   
-  Input = gyro.getY();
+  
   inRange = Utils::inRange(Input, Setpoint, 1);
 
   if (inRange)
@@ -179,9 +194,7 @@ void fastUpdates(){
   }
 
 
-
-  Input = gyro.getY();
-
+  Input = gyro.getPitch();
   rightMotor.update();
   leftMotor.update();
   gyro.update();

@@ -1,66 +1,49 @@
 
 #include "Gyro.h"
 #include "Arduino.h"
-
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
+#include <MPU6050_light.h>
 #include <Wire.h>
 
-Adafruit_MPU6050 mpu;
+MPU6050 mpu(Wire);
 
 Gyro::Gyro(){
 
 }
 void Gyro::init(){
-  if (!mpu.begin()) while (1);
-
-mpu.setAccelerometerRange(MPU6050_ACCEL_);
-  mpu.setGyroRange(MPU6050_RANGE_250_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-
-  // --- CALIBRATION STEP ---
-  // Hold the robot perfectly still and upright!
-  Serial.println("Calibrating... Keep upright.");
-  float sumGyroY = 0;
-  for (int i = 0; i < 200; i++) {
-    sensors_event_t a, g, t;
-    mpu.getEvent(&a, &g, &t);
-    sumGyroY += g.gyro.y;
-    delay(5);
-  }
-  gyroBiasY = sumGyroY / 200.0; // Calculate the "drift" at rest
+  Wire.begin();
+  byte status = mpu.begin();
+  Serial.print(F("MPU6050 status: "));
+  Serial.println(status);
+  while(status!=0){ } // stop everything if could not connect to MPU6050
   
-  Serial.println("Ready!");
-  lastMicros = micros();
-}
+  Serial.println(F("Calculating offsets, do not move MPU6050"));
+  delay(1000);
+  // 1. Ignore shaking (DLPF)
+  mpu.setAccOffsets(0.11,0.02,0.12);
+  mpu.setGyroOffsets(-2.59,-1.71,-0.11);
+  mpu.writeData(0x1a, 0x03); 
+  
+  // 2. Trust Gyro more to stop jumpy angles
+  mpu.setFilterGyroCoef(0.995); 
 
+  // 3. Calibrate Gyro, but NOT Accel (allows starting on side)
+  mpu.calcOffsets(false, false);
+  Serial.println("Done initializing imu!\n");
+  Serial.print("GyroX Offset: "); Serial.println(mpu.getGyroXoffset());
+  Serial.print("GyroY Offset: "); Serial.println(mpu.getGyroYoffset());
+  Serial.print("GyroZ Offset: "); Serial.println(mpu.getGyroZoffset());
+
+
+}
+void Gyro::CalibrateGyro(){
+  mpu.calcGyroOffsets();
+}
 void Gyro::update(){
-  sensors_event_t a, g, t;
-  mpu.getEvent(&a, &g, &t);
-
-  unsigned long now = micros();
-  float dt = (now - lastMicros) / 1000000.0;
-  lastMicros = now;
-
-  // 1. Get Tilt from Accelerometer (The "Reference")
-  // Using Y and Z because most robots mount the chip vertically
-  float accelAngle = atan2(a.acceleration.y, a.acceleration.z) * 180.0 / M_PI;
-
-  // 2. Get Rotation from Gyro (The "Action")
-  // Subtract the bias we found during calibration
-  float gyroRate = (g.gyro.x * 180.0 / M_PI) - (gyroBiasY * 180.0 / M_PI);
-
-  // 3. Complementary Filter (The "Robot Brain")
-  // This is exactly how self-balancing bots stay upright
-  angleY = ALPHA * (angleY + gyroRate * dt) + (1.0 - ALPHA) * accelAngle;
-
-  // Serial.print(" Gyro Angle: ");
-  // Serial.print(angleY);
-
+  mpu.update();
 }
 
-float Gyro::getY(){
-  // Serial.print(" , Gyro Angle: ");
-  // Serial.print(angleY);
-  return angleY;
+float Gyro::getPitch(){
+  return mpu.getAngleX();
+
+
 }

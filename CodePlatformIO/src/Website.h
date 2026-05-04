@@ -17,6 +17,11 @@ class Website {
 
     void update();
   private:
+    IPAddress local_IP;
+
+    IPAddress gateway;
+    IPAddress subnet;
+
     TunablesManager* tunablesManager;
     WebServer server;
     

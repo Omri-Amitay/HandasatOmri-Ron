@@ -7,20 +7,30 @@
 
 Website::Website(TunablesManager* tunablesManager)
   :server(80),
-  tunablesManager(tunablesManager)
+  tunablesManager(tunablesManager),
+  local_IP(192, 167, 6, 7),
+  gateway(192, 168, 4, 2),
+  subnet(255, 255, 255, 0)
 {}
 
 void Website::init(){
   Serial.println("Website initialized successfully!");
-  WiFi.begin(WiFiName , WiFiPassword);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(300);
-    Serial.print(".");
-  }
+
+  if(!WiFi.softAPConfig(local_IP, gateway, subnet)) {
+    Serial.println("STA Failed to configure");
+  }  
+  WiFi.softAP(WiFiName , WiFiPassword);
+  IPAddress IP = WiFi.softAPIP();
+  // while (WiFi.status() != WL_CONNECTED) {
+  //   delay(300);
+  //   Serial.print(".");
+  // }
 
   Serial.println();
   Serial.print("IP: ");
-  Serial.println(WiFi.localIP());
+  Serial.print(IP);
+  Serial.print(" Wifi SSID: ");
+  Serial.println(WiFiName);
   server.on("/", [this]() { handleRoot(); });
   server.on("/data", [this]() { handleData(); });
   server.on("/set", [this]() { handleSet(); });
