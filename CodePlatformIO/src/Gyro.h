@@ -12,6 +12,7 @@ class Gyro{
     Gyro();
     void init();
     float getPitch();
+    float getYaw();
     void update();
 
     void CalibrateGyro();

@@ -47,3 +47,6 @@ float Gyro::getPitch(){
 
 
 }
+float Gyro::getYaw(){
+  return mpu.getAngleZ();
+} 

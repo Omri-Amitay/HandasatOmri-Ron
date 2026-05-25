@@ -68,14 +68,15 @@ float Motor::getFloatMap(float x, float in_min, float in_max, float out_min, flo
 
 void Motor::setPower(float power, int wantedDirection) {  // true is forward false is backwards
   wantedDirection = wantedDirection <= 0 ? -1 : 1;               //allows -1 to act as negative direction
-
+  
   currentDirection = wantedDirection;
   // direction = _reversed ? direction * -1 : direction; //flips direction
   int ActualDirection = wantedDirection = _reversed ? wantedDirection * -1 : wantedDirection;
   
 
   ActualDirection = Utils::clamp(wantedDirection, 0, 1);
-  analogWrite(_motorPin, power);
+  power = Utils::inRange(power, 0 , 1) ? power : power + Ks/2;
+  analogWrite(_motorPin, Utils::clamp(abs(power), 0, 255));
   digitalWrite(_directionPin, ActualDirection);
 }
 
