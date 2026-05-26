@@ -69,13 +69,17 @@ float Motor::getFloatMap(float x, float in_min, float in_max, float out_min, flo
 void Motor::setPower(float power, int wantedDirection) {  // true is forward false is backwards
   wantedDirection = wantedDirection <= 0 ? -1 : 1;               //allows -1 to act as negative direction
   
-  currentDirection = wantedDirection;
+  currentRpm = wantedDirection;
   // direction = _reversed ? direction * -1 : direction; //flips direction
   int ActualDirection = wantedDirection = _reversed ? wantedDirection * -1 : wantedDirection;
   
 
+  this->wantedPower = power * ActualDirection;
+
   ActualDirection = Utils::clamp(wantedDirection, 0, 1);
   power = Utils::inRange(power, 0 , 1) ? power : power + Ks/2;
+
+  
   analogWrite(_motorPin, Utils::clamp(abs(power), 0, 255));
   digitalWrite(_directionPin, ActualDirection);
 }
@@ -189,28 +193,58 @@ void Motor::updatePID(double* newValues[6]) {
   Serial.print(Kd);
 }
 
-bool Motor::checkDirection(float power){
-  if(Utils::sign(this->lastRPM) != Utils::sign(power)){
-    
-  }else{
-    this->lastSwitchTime = millis();
-  }
 
-  return false;
-}
+/*double timeSinceChange = millis();
+double lastRpmValue = rpmOld
+changedvalue = false
+decreased
+
+if sign lastrpm != power
+changedValue = true
+
+if ChangedValue
+  if !decreased
+    decreased = currentRpm < lastRpm
+  else
+    changedValue = currentRPM > lastRPM
+
+motorDirection = if changedValue then sign power else motorDirection
+*/
 
 void Motor::update() {
   this->Input = this->getCalculatedRPM();
   
   float power = this->calculateOutput();
   
-  this->checkDirection(power);
-  if (this->velocityControlled) {
-    if (Utils::inRange(this->Input, 0, 0.5)) {
-      power = 0;
-    }
-    this->setPower(abs(power), Utils::sign(power));
+
+  if(Utils::sign(Input) != Utils::sign(power)){
+    changedSign = true;
   }
+
+  if(changedSign){
+    if(!decreased){
+      decreased = this->Input < this->lastRPM;
+    }else{
+      changedSign = this->Input > this->lastRPM;
+    }
+    if(this->lastSwitchTime + switchTimeMax < millis()){
+      changedSign = false;
+      decreased = false;
+    }
+  }
+
+  if(!changedSign){
+    this->currentDirection = Utils::sign(this->wantedPower);
+    changedSign = false;
+    decreased = false;
+  }
+
+
+  Serial.print(" CG: " + String(changedSign) + " D: " + String(decreased) + " LRPM: " + String(this->lastRPM) + " IN: " + String(this->Input) + " WP: " + String(this->wantedPower) + " CD: " + String(this->currentDirection));
+
+
+
+  this->lastRPM = this->Input;
   
 
   // if(Utils::inRange(this->Input, 0, 1.3))
@@ -248,4 +282,5 @@ void Motor::update() {
 
 void Motor::print(){
   Serial.print(_motorName + " R: " + String(Input));
+  // Serial.print( " P: " + String(power));
 }

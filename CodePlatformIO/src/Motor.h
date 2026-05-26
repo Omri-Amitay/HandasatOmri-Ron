@@ -43,11 +43,17 @@ private:
 
   bool velocityControlled = false;
 
-  int currentDirection = 0;
+
+  int currentDirection = 1;
+  float currentRpm = 0;
+  float lastRPM = 0;
+  float wantedPower = 0;
 
   unsigned long lastSwitchTime = 0;
-  long switchTimeMax = 628;
-  long lastRPM = 0;
+  long switchTimeMax = 200;
+  bool doneSignChange = false;
+  bool changedSign = false;
+  bool decreased = false;
 
   volatile unsigned long riseTime = 0;
   volatile unsigned long pulseWidth = 0;
@@ -61,7 +67,6 @@ private:
   unsigned long _total = 0;
   bool _valueSmoothed = false;
 
-  float motorPower = 0;
 
   double Setpoint, Input, Output;
   double Kp = 50, Ki = 6, Kd = 0;

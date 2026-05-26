@@ -16,19 +16,19 @@ Gyro gyro;
 int statusLed = 4;
 
 double Setpoint = 0, Output = 0, Input = 0;
-double Kp = 9, Ki = 240, Kd = 0.26;
+double Kp = 6.5, Ki = 240, Kd = 0.12;
 
 
 double setpointYaw = 0, outputYaw = 0, inputYaw = 0;
 double KpYaw = 1, KiYaw = 1, KdYaw = 0;
 
 double setpointLeveling = 0, inputLeveling = 0; //input is motorPower, output is the setpoint of the position controller. setpoint is the target rpm.
-double KpLeveling = 1, KiLeveling = 1, KdLeveling = 0;
+double KpLeveling = 0.09, KiLeveling = 0.05, KdLeveling = 0.0011;
 
 PID positionController(&Input, &Output, &Setpoint, Kp, Ki, Kd, REVERSE);
 PID rotationalController(&inputYaw, &outputYaw, &setpointYaw, KpYaw, KiYaw, KdYaw, DIRECT);
 
-PID levelingController(&inputLeveling, &Setpoint, &setpointLeveling, KpLeveling, KiLeveling, KdLeveling, REVERSE);
+PID levelingController(&inputLeveling, &Setpoint, &setpointLeveling, KpLeveling, KiLeveling, KdLeveling, DIRECT);
 
 TunablesManager manager;
 Website website(&manager);
@@ -105,10 +105,10 @@ void setup()
   pinMode(statusLed, OUTPUT);
   digitalWrite(statusLed, LOW);
   gyro.init();
-// if (!PS4.begin("90:89:5F:28:43:8B")) {
-//     Serial.println("Fatal Error: PS4 Bluetooth failed to initialize!");
-//     while(1); // Stop right here if the hardware failed to start
-//   }
+  if (!PS4.begin("90:89:5F:28:43:8B")) {
+      Serial.println("Fatal Error: PS4 Bluetooth failed to initialize!");
+      while(1); // Stop right here if the hardware failed to start
+    }
   positionController.SetOutputLimits(-255, 255);
   positionController.SetMode(AUTOMATIC);
   positionController.SetSampleTime(sampleTime);
@@ -138,41 +138,47 @@ unsigned long lastUpdateSlow = 0;
 
 void slowUpdates()
 {
-  // if(PS4.isConnected()){
+   if(PS4.isConnected()){
 
   //   (millis()/ 1000) % 2 == 0 ? PS4.setLed(255,0,0) : PS4.setLed(0,255,0);
   //   PS4.setRumble(100, 255);
   //   if(PS4.Right()){
   //     setpointYaw = 0;
   //    }
-  //   else if(PS4.Left()){
-  //     setpointYaw = 90;
-  //     Serial.print(" Left ");
-  //   }
-  //   Serial.print(" PS4 Connected! ");
-  // }
+    Serial.print(" PS4 RStickY: ");
+    float power = map(PS4.RStickY(), -128, 127, -255, 255);
+    Serial.print(power);
+    rightMotor.setPower(abs(power), Utils::sign(power));
+    rightMotor.update();
+  }
   lastUpdateSlow = millis();
-  website.update();
+  // website.update();
   Serial.print(" Hz: ");
   Serial.print(loopTime());
-  Serial.print(" iR: ");
-  Serial.print(inRange);
-  Serial.print(" hS: ");
-  Serial.print(hasStarted);
-  Serial.print(" Gy: ");
-  Serial.print(Input);
-  Serial.print(" MO: ");
-  Serial.print(Output);
-  Serial.print(" MotorWantedPower: ");
-  Serial.print(motorPower);
-  Serial.print( " levelingInput: ");
-  Serial.print(inputLeveling);
-  Serial.print(" SetpointPitch: ");
-  Serial.print(Setpoint);
+  // Serial.print(" iR: ");
+  // Serial.print(inRange);
+  // Serial.print(" hS: ");
+  // Serial.print(hasStarted);
+  // Serial.print(" Gy: ");
+  // Serial.print(Input);
+  // Serial.print(" MO: ");
+  // Serial.print(Output);
+  // Serial.print(" MotorWantedPower: ");
+  // Serial.print(motorPower);
+  // Serial.print(" levelingInput: ");
+  // Serial.print(inputLeveling);
+  // Serial.print(" MotorPower: ");
+  // Serial.print(motorPower);
+  // Serial.print(" MotorSpeed: ");
+  // Serial.print( rightMotor.getCalculatedRPM() );
+  // Serial.print(" SetpointPitch: ");
+  // Serial.print(Setpoint);
+  Serial.print(" Millis: ");
+  Serial.print(millis());
   
   
-  rightMotor.print();
-  leftMotor.print();
+  // rightMotor.print();
+  // leftMotor.print();
   Serial.println();
 
   if (positionTable.fieldChanged())
@@ -229,16 +235,14 @@ void fastUpdates(){
     positionController.Compute();
     rotationalController.Compute();
     levelingController.Compute();
-    // rightMotor.setVelocity(Output);
-    // leftMotor.setVelocity(Output);
-    rightMotor.setPower(abs(Output - outputYaw), Utils::sign(Output - outputYaw));
-    leftMotor.setPower(abs(Output + outputYaw), Utils::sign(Output + outputYaw));
+    // rightMotor.setPower(abs(Output - outputYaw), Utils::sign(Output - outputYaw));
+    // leftMotor.setPower(abs(Output + outputYaw), Utils::sign(Output + outputYaw));
    
   }
   else
   {
-    rightMotor.setPower(0,1);
-    leftMotor.setPower(0,1);
+    // rightMotor.setPower(0,1);
+    // leftMotor.setPower(0,1);
   }
   if (!Utils::inRange(Input, Setpoint, 70))
   {
@@ -266,7 +270,8 @@ void fastUpdates(){
 
   Input = gyro.getPitch();
   inputYaw = gyro.getYaw();
-  inputLeveling = (rightMotor.getCalculatedRPM() + leftMotor.getCalculatedRPM()) / 2;
+  double motorRPM = (rightMotor.getCalculatedRPM() + leftMotor.getCalculatedRPM()) / 2;
+  inputLeveling = Utils::inRange(motorRPM, 0, 2.5) ? motorRPM * 0.1 : motorRPM;
   rightMotor.update();
   leftMotor.update();
   gyro.update();
@@ -283,7 +288,7 @@ void loop()
     loopTime();
   }
   if(millis() - lastUpdateFast > 6){
-    fastUpdates();
+    // fastUpdates();
   }
 
 
