@@ -31,7 +31,7 @@ void Motor::init() {
   velocityController.SetOutputLimits(-255, 255);
   velocityController.SetSampleTime(60);  //default is 200ms
   this->velocityController.SetMode(MANUAL);
-  this->velocityController.SetMode(AUTOMATIC);
+  // this->velocityController.SetMode(AUTOMATIC);
 }
 
 void IRAM_ATTR Motor::handleInterrupt0() {
@@ -69,15 +69,16 @@ float Motor::getFloatMap(float x, float in_min, float in_max, float out_min, flo
 void Motor::setPower(float power, int wantedDirection) {  // true is forward false is backwards
   wantedDirection = wantedDirection <= 0 ? -1 : 1;               //allows -1 to act as negative direction
   
-  currentRpm = wantedDirection;
+
   // direction = _reversed ? direction * -1 : direction; //flips direction
   int ActualDirection = wantedDirection = _reversed ? wantedDirection * -1 : wantedDirection;
   
 
   this->wantedPower = power * ActualDirection;
-
+  // Serial.print(" P: " + String(this->wantedPower));
+  // Serial.println( " D: " + String(ActualDirection));
   ActualDirection = Utils::clamp(wantedDirection, 0, 1);
-  power = Utils::inRange(power, 0 , 1) ? power : power + Ks/2;
+  power = Utils::inRange(power, 0 , 1000) ? power : power + Ks/2;
 
   
   analogWrite(_motorPin, Utils::clamp(abs(power), 0, 255));
@@ -240,44 +241,13 @@ void Motor::update() {
   }
 
 
-  Serial.print(" CG: " + String(changedSign) + " D: " + String(decreased) + " LRPM: " + String(this->lastRPM) + " IN: " + String(this->Input) + " WP: " + String(this->wantedPower) + " CD: " + String(this->currentDirection));
+  // Serial.print(" CG: " + String(changedSign) + " D: " + String(decreased) + " LRPM: " + String(this->lastRPM) + " IN: " + String(this->Input) + " WP: " + String(this->wantedPower) + " CD: " + String(this->currentDirection));
 
 
-
+  // this->setPower(abs(power), Utils::sign(this->currentDirection));
   this->lastRPM = this->Input;
   
 
-  // if(Utils::inRange(this->Input, 0, 1.3))
-
-
-
-
-
-  //float rpm = this->getCalculatedRPM();  //this causes the signal list to keep updating resulting in new RPM values.
-  // Serial.print(_motorName + "Setpoint: ");
-  // Serial.print(this->Setpoint);
-  // Serial.print(", Power: ");
-  // Serial.print(",");
-  // Serial.print(power);
-  // Serial.print(", ActualVel: ");
-  // Serial.print(",");
-  // Serial.print(this->Input);
-  // float rpm = this->getCalculatedRPM();
-  // Serial.print(" R:");
-  // Serial.print(rpm);
-  // Serial.print(" Dir: ");
-  // Serial.print(this->currentDirection);
-  // Serial.print(" , VelocityEnabled: ");
-  // Serial.print(this->velocityControlled);
-  /*Serial.print(", Signal: ");
-  Serial.print(",");
-  // Serial.print(this->Kp);
-  // Serial.print(",");
-  // Serial.print(this->Kd);
-
-
-  // Serial.print(_motorName + "RPM: ");
-  // Serial.print(rpm); */
 }
 
 void Motor::print(){

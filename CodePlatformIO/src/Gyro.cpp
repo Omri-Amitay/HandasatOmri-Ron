@@ -27,6 +27,7 @@ void Gyro::init(){
   mpu.setFilterGyroCoef(0.995); 
 
   // 3. Calibrate Gyro, but NOT Accel (allows starting on side)
+  delay(4000);
   mpu.calcOffsets(false, false);
   Serial.println("Done initializing imu!\n");
   Serial.print("GyroX Offset: "); Serial.println(mpu.getGyroXoffset());
@@ -48,5 +49,13 @@ float Gyro::getPitch(){
 
 }
 float Gyro::getYaw(){
-  return mpu.getAngleZ();
+  float angle = mpu.getAngleZ();
+    // fmod handles the division and returns the remainder for floats
+    float wrappedAngle = fmod(angle, 360.0); 
+    
+    // Ensure the result is always positive (0 to 359.99)
+    if (wrappedAngle < 0) {
+        wrappedAngle += 360.0;
+    }
+    return wrappedAngle;
 } 

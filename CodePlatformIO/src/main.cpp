@@ -7,7 +7,9 @@
 #include "config.h"
 #include <PID_v1.h>
 
-#include <PS4Controller.h>
+#include "Controller.h"
+
+Controller controller;
 
 Motor leftMotor(" left motor ", 18, 12, 25, false);
 Motor rightMotor(" right motor ", 14, 13, 26, true);
@@ -16,14 +18,14 @@ Gyro gyro;
 int statusLed = 4;
 
 double Setpoint = 0, Output = 0, Input = 0;
-double Kp = 6.5, Ki = 240, Kd = 0.12;
+double Kp = 7.5, Ki = 250, Kd = 0.45;
 
 
 double setpointYaw = 0, outputYaw = 0, inputYaw = 0;
 double KpYaw = 1, KiYaw = 1, KdYaw = 0;
 
 double setpointLeveling = 0, inputLeveling = 0; //input is motorPower, output is the setpoint of the position controller. setpoint is the target rpm.
-double KpLeveling = 0.09, KiLeveling = 0.05, KdLeveling = 0.0011;
+double KpLeveling = 0.09, KiLeveling = 0, KdLeveling = 0.004;
 
 PID positionController(&Input, &Output, &Setpoint, Kp, Ki, Kd, REVERSE);
 PID rotationalController(&inputYaw, &outputYaw, &setpointYaw, KpYaw, KiYaw, KdYaw, DIRECT);
@@ -42,7 +44,6 @@ TunableGroup positionTable("position");
 TunableGroup rotationTable("rotation");
 TunableGroup velocityTable("motorVelocity");
 TunableGroup levelingTable("leveling");
-// TunableGroup motorTable("motor");
 
 double **motorPID;
 double motorPower;
@@ -92,6 +93,7 @@ void setTunables()
 void setup()
 {
   Serial.begin(115200);
+  controller.init();
   leftMotor.init();
   rightMotor.init();
   delay(2000);
@@ -105,10 +107,6 @@ void setup()
   pinMode(statusLed, OUTPUT);
   digitalWrite(statusLed, LOW);
   gyro.init();
-  if (!PS4.begin("90:89:5F:28:43:8B")) {
-      Serial.println("Fatal Error: PS4 Bluetooth failed to initialize!");
-      while(1); // Stop right here if the hardware failed to start
-    }
   positionController.SetOutputLimits(-255, 255);
   positionController.SetMode(AUTOMATIC);
   positionController.SetSampleTime(sampleTime);
@@ -117,7 +115,7 @@ void setup()
   rotationalController.SetMode(AUTOMATIC);
   rotationalController.SetSampleTime(yawSampleTime);
 
-  levelingController.SetOutputLimits(-2, 2);
+  levelingController.SetOutputLimits(-4, 4);
   levelingController.SetMode(AUTOMATIC);
   levelingController.SetSampleTime(40);
 
@@ -138,47 +136,20 @@ unsigned long lastUpdateSlow = 0;
 
 void slowUpdates()
 {
-   if(PS4.isConnected()){
-
-  //   (millis()/ 1000) % 2 == 0 ? PS4.setLed(255,0,0) : PS4.setLed(0,255,0);
-  //   PS4.setRumble(100, 255);
-  //   if(PS4.Right()){
-  //     setpointYaw = 0;
-  //    }
-    Serial.print(" PS4 RStickY: ");
-    float power = map(PS4.RStickY(), -128, 127, -255, 255);
-    Serial.print(power);
-    rightMotor.setPower(abs(power), Utils::sign(power));
-    rightMotor.update();
-  }
   lastUpdateSlow = millis();
-  // website.update();
+  website.update();
   Serial.print(" Hz: ");
   Serial.print(loopTime());
-  // Serial.print(" iR: ");
-  // Serial.print(inRange);
-  // Serial.print(" hS: ");
-  // Serial.print(hasStarted);
-  // Serial.print(" Gy: ");
-  // Serial.print(Input);
-  // Serial.print(" MO: ");
-  // Serial.print(Output);
-  // Serial.print(" MotorWantedPower: ");
-  // Serial.print(motorPower);
-  // Serial.print(" levelingInput: ");
-  // Serial.print(inputLeveling);
-  // Serial.print(" MotorPower: ");
-  // Serial.print(motorPower);
-  // Serial.print(" MotorSpeed: ");
-  // Serial.print( rightMotor.getCalculatedRPM() );
-  // Serial.print(" SetpointPitch: ");
-  // Serial.print(Setpoint);
   Serial.print(" Millis: ");
   Serial.print(millis());
+  Serial.print(" PS4 Angle: ");
+  Serial.print((controller.getSignalVector().angle + PI)*57.2958);
+  Serial.print(" PS4 Magnitude: ");
+  Serial.print(controller.getSignalVector().magnitude);
+  Serial.print(" Yaw: ");
+  Serial.print(inputYaw);
   
   
-  // rightMotor.print();
-  // leftMotor.print();
   Serial.println();
 
   if (positionTable.fieldChanged())
@@ -209,8 +180,8 @@ void slowUpdates()
     {
       rightMotor.setVelControl(false);
       leftMotor.setVelControl(false);
-      leftMotor.setPower(abs(motorPower), Utils::sign(motorPower));
-      rightMotor.setPower(abs(motorPower), Utils::sign(motorPower));
+      // leftMotor.setPower(abs(motorPower), Utils::sign(motorPower));
+      // rightMotor.setPower(abs(motorPower), Utils::sign(motorPower));
     }
     else
     {
@@ -229,43 +200,31 @@ unsigned long lastUpdateFast = 0;
 
 void fastUpdates(){
   
-  if (hasStarted)
-  {
-    digitalWrite(statusLed, HIGH);
-    positionController.Compute();
-    rotationalController.Compute();
-    levelingController.Compute();
-    // rightMotor.setPower(abs(Output - outputYaw), Utils::sign(Output - outputYaw));
-    // leftMotor.setPower(abs(Output + outputYaw), Utils::sign(Output + outputYaw));
-   
-  }
-  else
-  {
-    // rightMotor.setPower(0,1);
-    // leftMotor.setPower(0,1);
-  }
   if (!Utils::inRange(Input, Setpoint, 70))
   {
-    //hasStarted = false;
+    // hasStarted = false;
   }
   
   
   inRange = Utils::inRange(Input, Setpoint, 1);
 
-  if (inRange)
-  {
-    if (!hasStarted && lastInRange != 0)
-    {
-      positionController.SetMode(AUTOMATIC);
-      // rightMotor.setVelControl(true);
-      // leftMotor.setVelControl(true);
+  // {
+  //   if (!hasStarted && lastInRange != 0)
+  //   {
+  //     positionController.SetMode(AUTOMATIC);
+  //     // rightMotor.setVelControl(true);
+  //     // leftMotor.setVelControl(true);
+  //     hasStarted = true;
+  //   }
+  //   else
+  //   {
+  //     lastInRange = millis();
+  //   }
+  // }
+    if(controller.clickedA() || motorPower != 0){
       hasStarted = true;
     }
-    else
-    {
-      lastInRange = millis();
-    }
-  }
+  
 
 
   Input = gyro.getPitch();
@@ -276,6 +235,8 @@ void fastUpdates(){
   leftMotor.update();
   gyro.update();
 }
+
+
 void loop()
 {
   
@@ -287,9 +248,22 @@ void loop()
   {
     loopTime();
   }
-  if(millis() - lastUpdateFast > 6){
-    // fastUpdates();
+  if(millis() - lastUpdateFast > 5){
+    fastUpdates();
   }
+
+    if (hasStarted)
+  {
+    digitalWrite(statusLed, HIGH);
+    positionController.Compute();
+    rotationalController.Compute();
+    levelingController.Compute();
+    rightMotor.setPower(abs(Output - outputYaw), Utils::sign(Output - outputYaw));
+    leftMotor.setPower(abs(Output + outputYaw), Utils::sign(Output + outputYaw));
+   
+  }
+
+  
 
 
 
