@@ -1,6 +1,7 @@
 #include "Controller.h"
 #include "Arduino.h"
 #include <PS4Controller.h>
+#include "Utils.h"
 
 Controller::Controller(){
 }
@@ -10,11 +11,20 @@ void Controller::init(){
 
 
 Controller::SignalVector Controller::getSignalVector(){
+
+
     if(!PS4.isConnected()){
         return {0, 180};
     }
 
-    return {hypot(PS4.RStickX(), PS4.RStickY()), atan2(PS4.RStickY(), PS4.RStickX())};
+    float power = hypot(PS4.RStickX(), PS4.RStickY());
+
+    power = Utils::inRange(power, 0, 4) ? 0 : power;
+    power = Utils::clamp(power, 0, 128);
+    power = map(power, 0, 128, 0, 7);
+
+
+    return {power, atan2(PS4.RStickY(), PS4.RStickX())};
 
 }
 float Controller::convertSignal(int8_t signal){

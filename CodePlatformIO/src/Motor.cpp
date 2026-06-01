@@ -252,5 +252,5 @@ void Motor::update() {
 
 void Motor::print(){
   Serial.print(_motorName + " R: " + String(Input));
-  // Serial.print( " P: " + String(power));
+  Serial.print( " P: " + String(this->wantedPower));
 }

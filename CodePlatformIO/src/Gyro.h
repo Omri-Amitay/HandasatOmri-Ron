@@ -14,6 +14,7 @@ class Gyro{
     float getPitch();
     float getYaw();
     void update();
+    float getTemp();
 
     void CalibrateGyro();
   private:
