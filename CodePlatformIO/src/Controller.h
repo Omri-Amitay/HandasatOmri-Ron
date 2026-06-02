@@ -19,7 +19,7 @@ class Controller{
     void update();
     SignalVector getSignalVector();
     bool clickedA();
-
+    bool clickedB();
    
   private:
   

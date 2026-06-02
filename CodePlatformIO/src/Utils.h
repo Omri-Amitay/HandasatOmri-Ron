@@ -10,6 +10,7 @@ public:
     static bool recievedNumber(double &outValue);
     static bool recieve2Numbers(double &outA, double &outB);
     static bool inRange(float val, float target, float tolerance);
+    static float calculateShortestPath(float angle, float wantedAngle);
 };
 
 #endif

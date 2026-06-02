@@ -70,17 +70,13 @@ void Motor::setPower(float power, int wantedDirection) {  // true is forward fal
   wantedDirection = wantedDirection <= 0 ? -1 : 1;               //allows -1 to act as negative direction
   
 
-  // direction = _reversed ? direction * -1 : direction; //flips direction
+  this->wantedPower = power * wantedDirection;
+  
+  power = Utils::inRange(power, 0 , 20) ? power : power + Ks/2;
+
   int ActualDirection = wantedDirection = _reversed ? wantedDirection * -1 : wantedDirection;
-  
-
-  this->wantedPower = power * ActualDirection;
-  // Serial.print(" P: " + String(this->wantedPower));
-  // Serial.println( " D: " + String(ActualDirection));
   ActualDirection = Utils::clamp(wantedDirection, 0, 1);
-  power = Utils::inRange(power, 0 , 1000) ? power : power + Ks/2;
 
-  
   analogWrite(_motorPin, Utils::clamp(abs(power), 0, 255));
   digitalWrite(_directionPin, ActualDirection);
 }
@@ -215,10 +211,10 @@ motorDirection = if changedValue then sign power else motorDirection
 void Motor::update() {
   this->Input = this->getCalculatedRPM();
   
-  float power = this->calculateOutput();
+  // float power = this->calculateOutput();
   
 
-  if(Utils::sign(Input) != Utils::sign(power)){
+  if(Utils::sign(Input) != Utils::sign(wantedPower)){
     changedSign = true;
   }
 

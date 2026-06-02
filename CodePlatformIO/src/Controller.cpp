@@ -14,17 +14,18 @@ Controller::SignalVector Controller::getSignalVector(){
 
 
     if(!PS4.isConnected()){
-        return {0, 180};
+        return {0, 90};
     }
 
     float power = hypot(PS4.RStickX(), PS4.RStickY());
 
-    power = Utils::inRange(power, 0, 4) ? 0 : power;
+    power = Utils::inRange(power, 0, 15) ? 0 : power;
     power = Utils::clamp(power, 0, 128);
-    power = map(power, 0, 128, 0, 7);
+    power = map(power, 0, 128, 0, 26);
 
-
-    return {power, atan2(PS4.RStickY(), PS4.RStickX())};
+    float angle = (atan2(PS4.RStickY(), PS4.RStickX()) * 180 / PI) + 180;
+    angle = power == 0 ? 90 : angle;
+    return {power, angle};
 
 }
 float Controller::convertSignal(int8_t signal){
@@ -34,4 +35,7 @@ float Controller::convertSignal(int8_t signal){
 bool Controller::clickedA(){
     // Serial.print(PS4.Cross());
     return PS4.Cross();
+}
+bool Controller::clickedB(){
+    return PS4.Circle();
 }

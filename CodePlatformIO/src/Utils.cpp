@@ -120,3 +120,7 @@ bool Utils::inRange(float val, float target, float tolerance){
   }
   return false;
 }
+
+float Utils::calculateShortestPath(float angle, float wantedAngle){
+  return fmod(wantedAngle - angle + 540.0, 360.0) - 180;
+}

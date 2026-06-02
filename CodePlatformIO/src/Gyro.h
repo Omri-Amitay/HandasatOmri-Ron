@@ -17,8 +17,10 @@ class Gyro{
     float getTemp();
 
     void CalibrateGyro();
+
+    void resetYaw();
   private:
-   
+    float yawOffset = 0;
     float ALPHA = 0.75;
     float angleY = 0;
     float gyroBiasY = 0;
