@@ -17,15 +17,15 @@ Motor rightMotor(" right motor ", 14, 13, 26, true);
 Gyro gyro;
 int statusLed = 2;
 
-double Setpoint = -3, Output = 0, Input = 0;
-double Kp = 17, Ki = 200, Kd = 0.15;
+double Setpoint = 1, Output = 0, Input = 0;
+double Kp = 15, Ki = 200, Kd = 0.12;
 
 
 double setpointYaw = 0, outputYaw = 0, inputYaw = 0;
 double KpYaw = 1, KiYaw = 0, KdYaw = 0;
 
 double setpointLeveling = 0, inputLeveling = 0; //input is motorPower, output is the setpoint of the position controller. setpoint is the target rpm.
-double KpLeveling = 0.3, KiLeveling = 0.05, KdLeveling = 0.001;
+double KpLeveling = 0.13, KiLeveling = 0.05, KdLeveling = 0.001;
 
 PID positionController(&Input, &Output, &Setpoint, Kp, Ki, Kd, REVERSE);
 
@@ -173,30 +173,33 @@ void slowUpdates()
 {
   lastUpdateSlow = millis();
   website.update();
-  Serial.print(" Hz: ");
-  Serial.print(loopTime());
-  // Serial.print(" Millis: ");
-  // Serial.print(millis());
-  // Serial.print(" PS4 Angle: ");
-  // Serial.print((controller.getSignalVector().angle + PI)*57.2958);
-  // Serial.print(" PS4 Magnitude: ");
-  // Serial.print(controller.getSignalVector().magnitude);
-  Serial.print(" Yaw: ");
-  Serial.print(inputYaw);
+  // Serial.print(" Hz: ");
+  // Serial.print(loopTime());
+  // // Serial.print(" Millis: ");
+  // // Serial.print(millis());
+  // // Serial.print(" PS4 Angle: ");
+  // // Serial.print((controller.getSignalVector().angle + PI)*57.2958);
+  // // Serial.print(" PS4 Magnitude: ");
+  // // Serial.print(controller.getSignalVector().magnitude);
+  // Serial.print(" Yaw: ");
+  // Serial.print(inputYaw);
   Serial.print(" Setpoint: ");
   Serial.print(Setpoint);
-  // Serial.print(" Output: ");
-  // Serial.print(Output);
+  Serial.print(" Pitch: ");
+  Serial.print(gyro.getPitch());
+  Serial.println();
+  // // Serial.print(" Output: ");
+  // // Serial.print(Output);
 
-  Serial.print(" Temp: ");
-  Serial.print(gyro.getTemp());
+  // Serial.print(" Temp: ");
+  // Serial.print(gyro.getTemp());
 
-  Serial.print(" yaw ");
-  Serial.print( gyro.getYaw());
-  Serial.print(" Direction ");
-  Serial.print( Utils::calculateShortestPath(gyro.getYaw(), setpointYaw));
-  Serial.print(" Setpoint: ");
-  Serial.print( setpointYaw);
+  // Serial.print(" yaw ");
+  // Serial.print( gyro.getYaw());
+  // Serial.print(" Direction ");
+  // Serial.print( Utils::calculateShortestPath(gyro.getYaw(), setpointYaw));
+  // Serial.print(" Setpoint: ");
+  // Serial.print( setpointYaw);
 
   // Serial.print(" rotationSetpoint: ");
   // Serial.print( setpointLeveling );
@@ -204,7 +207,7 @@ void slowUpdates()
   // Serial.print( controller.getSignalVector().magnitude );
   // leftMotor.print();
   // rightMotor.print();
-  Serial.println();
+  // Serial.println();
 
   if (positionTable.fieldChanged() != -1)
   {
@@ -213,14 +216,16 @@ void slowUpdates()
     if(positionTable.getFieldByName("ResetGyro")->getValue() == 1){
       gyro.CalibrateGyro();
     }
+    Serial.print("!!!!!!!!");
   }
-
-  if(rotationTable.fieldChanged() != -1)
+  int rotationControllerField = rotationTable.fieldChanged();
+  if(rotationControllerField != -1)
   {
     rotationalController.SetTunings(KpYaw, KiYaw, KdYaw);
     rotationalController.SetSampleTime(yawSampleTime);
     rotationalController.SetOutputLimits(-yawOutputLimit, yawOutputLimit);
-    Serial.print(" RC KP: " + String(rotationalController.GetKp()));
+    Serial.print(" RC KP: " + String( rotationTable.getFieldByIndex(rotationControllerField)->getValue()));
+    Serial.print(rotationalController.GetKd());
   }
   if(levelingTable.fieldChanged() != -1){
     levelingController.SetTunings(KpLeveling, KiLeveling, KdLeveling);
@@ -302,7 +307,7 @@ void loop()
   
   if (millis() - lastUpdateSlow > 100)
   {
-    // slowUpdates();
+    slowUpdates();
   }
   else
   {
@@ -324,7 +329,7 @@ void loop()
       unsigned long runTime = now - lastUpdateOutput;
       lastUpdateOutput = now;
       outputLoopHz = runTime == 0 ? 0 : 1000000.0 / runTime;
-
+      
       previousOutput = Output;
       rotationalController.Compute();
       levelingController.Compute();
@@ -355,6 +360,9 @@ void loop()
       }
 
       setpointLeveling = shouldFlipDirection ? magnitude : magnitude * -1;
+      // Serial.print("HZ");
+      // Serial.print(outputLoopHz);
+      // Serial.println();
 
       // Serial.print(" Shouldflip: ");
       // Serial.print(shouldFlipDirection);
