@@ -356,16 +356,16 @@ void loop()
 
       setpointLeveling = shouldFlipDirection ? magnitude : magnitude * -1;
 
-      Serial.print(" Shouldflip: ");
-      Serial.print(shouldFlipDirection);
-      Serial.print(" CA ");
-      Serial.print(controllerAngle);
-      Serial.print(" gyroAngle ");
-      Serial.println(gyroAngle);
-      Serial.print(" Distance ");
-      Serial.print(inputYaw);
-      Serial.print(" yawSetpoint: ");
-      Serial.print(setpointYaw);
+      // Serial.print(" Shouldflip: ");
+      // Serial.print(shouldFlipDirection);
+      // Serial.print(" CA ");
+      // Serial.print(controllerAngle);
+      // Serial.print(" gyroAngle ");
+      // Serial.println(gyroAngle);
+      // Serial.print(" Distance ");
+      // Serial.print(inputYaw);
+      // Serial.print(" yawSetpoint: ");
+      // Serial.print(setpointYaw);
     }
    
   }

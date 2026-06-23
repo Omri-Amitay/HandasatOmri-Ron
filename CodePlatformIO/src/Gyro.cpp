@@ -26,8 +26,8 @@ void Gyro::init(){
 
   Serial.println(F("Calculating offsets, do not move MPU6050"));
   // 1. Ignore shaking (DLPF)
-  mpu.setAccOffsets(0.11,0.02,0.12);
-  mpu.setGyroOffsets(-1.15,0.97,3);
+  mpu.setAccOffsets(-0.04,-0.01,-0.12);
+  mpu.setGyroOffsets(-1.28,0.34,0.45);
   mpu.writeData(0x1a, 0x03); 
   
   // 2. Trust Gyro more to stop jumpy angles
@@ -40,6 +40,9 @@ void Gyro::init(){
   Serial.print("GyroX Offset: "); Serial.println(mpu.getGyroXoffset());
   Serial.print("GyroY Offset: "); Serial.println(mpu.getGyroYoffset());
   Serial.print("GyroZ Offset: "); Serial.println(mpu.getGyroZoffset());
+  Serial.print("AccelX: "); Serial.println(mpu.getAccXoffset());
+  Serial.print("AccelY: "); Serial.println(mpu.getAccYoffset());
+  Serial.print("Accelz: "); Serial.println(mpu.getAccZoffset());
 
 
 }
